@@ -60,7 +60,7 @@
           <div class="p-5 space-y-5">
             <div>
               <label class="block text-sm font-bold text-stone-700 mb-2">排便次數 (相較於正常狀態)</label>
-              <select v-model.number="uc.stool" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+              <select v-model.number="uc.stool" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none text-sm md:text-base">
                 <option value="0">正常 (0分)</option>
                 <option value="1">每天多 1-2 次 (1分)</option>
                 <option value="2">每天多 3-4 次 (2分)</option>
@@ -69,7 +69,7 @@
             </div>
             <div>
               <label class="block text-sm font-bold text-stone-700 mb-2">直腸出血狀況</label>
-              <select v-model.number="uc.bleeding" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+              <select v-model.number="uc.bleeding" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none text-sm md:text-base">
                 <option value="0">無出血 (0分)</option>
                 <option value="1">少於一半排便有血絲 (1分)</option>
                 <option value="2">多數排便伴隨明顯鮮血 (2分)</option>
@@ -78,7 +78,7 @@
             </div>
             <div>
               <label class="block text-sm font-bold text-stone-700 mb-2">內視鏡黏膜表現</label>
-              <select v-model.number="uc.endo" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+              <select v-model.number="uc.endo" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none text-sm md:text-base">
                 <option value="0">正常或非活動性疾病 (0分)</option>
                 <option value="1">輕度：紅斑、血管紋理減少、輕微易脆 (1分)</option>
                 <option value="2">中度：明顯紅斑、無血管紋理、易脆、糜爛 (2分)</option>
@@ -86,12 +86,12 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-stone-700 mb-2">醫師整體評估 (PGA)</label>
-              <select v-model.number="uc.pga" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
-                <option value="0">正常 (0分)</option>
-                <option value="1">輕度疾病 (1分)</option>
-                <option value="2">中度疾病 (2分)</option>
-                <option value="3">重度疾病 (3分)</option>
+              <label class="block text-sm font-bold text-stone-700 mb-2">醫師整體評估 (PGA - 綜合考量日常表現)</label>
+              <select v-model.number="uc.pga" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none text-sm md:text-base">
+                <option value="0">正常 (0分) - 無任何不適，完美控制</option>
+                <option value="1">輕度疾病 (1分) - 症狀輕微，患者自覺良好，無須改變現有治療</option>
+                <option value="2">中度疾病 (2分) - 症狀明顯，生活品質受影響，需要調整用藥介入</option>
+                <option value="3">重度疾病 (3分) - 症狀極嚴重，活動力大幅下降，可能需安排住院</option>
               </select>
             </div>
           </div>
@@ -104,36 +104,36 @@
             <p class="text-xs text-violet-200">註：為符合門診快速評估，臨床症狀請填寫「過去7天的平均每日狀況」，系統將自動換算7天總和。</p>
           </div>
           <div class="p-5 space-y-5">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4 border-b pb-4">
               <div>
                 <label class="block text-sm font-bold text-stone-700 mb-2">每日稀軟便/水瀉次數</label>
                 <input type="number" v-model.number="cd.stools" min="0" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
               </div>
               <div>
-                <label class="block text-sm font-bold text-stone-700 mb-2">腹痛程度 (平均)</label>
-                <select v-model.number="cd.pain" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
-                  <option value="0">無 (0分)</option>
-                  <option value="1">輕度 (1分)</option>
-                  <option value="2">中度 (2分)</option>
-                  <option value="3">重度 (3分)</option>
+                <label class="block text-sm font-bold text-stone-700 mb-2">腹痛程度 (每日平均)</label>
+                <select v-model.number="cd.pain" class="w-full p-2 border rounded focus:ring-violet-300 outline-none text-sm md:text-base">
+                  <option value="0">無 (0分) - 完全沒有腹部疼痛</option>
+                  <option value="1">輕度 (1分) - 偶有絞痛，但不影響日常作息或進食</option>
+                  <option value="2">中度 (2分) - 疼痛明顯，已影響部分活動，可能需要吃止痛藥</option>
+                  <option value="3">重度 (3分) - 劇烈疼痛，痛到無法進行日常活動或需要臥床</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-bold text-stone-700 mb-2">整體健康狀況 (平均)</label>
-                <select v-model.number="cd.wellbeing" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
-                  <option value="0">大致良好 (0分)</option>
-                  <option value="1">尚可 (1分)</option>
-                  <option value="2">不佳 (2分)</option>
-                  <option value="3">極差 (3分)</option>
+                <label class="block text-sm font-bold text-stone-700 mb-2">整體健康狀況 (每日平均)</label>
+                <select v-model.number="cd.wellbeing" class="w-full p-2 border rounded focus:ring-violet-300 outline-none text-sm md:text-base">
+                  <option value="0">大致良好 (0分) - 精神與體力與正常人無異</option>
+                  <option value="1">尚可 (1分) - 稍感疲倦或不適，但多數日常作息仍可維持</option>
+                  <option value="2">不佳 (2分) - 虛弱或疲憊感明顯，已影響工作、學習與生活品質</option>
+                  <option value="3">極差 (3分) - 極度虛弱，無法自理生活，幾乎整日臥床</option>
                 </select>
               </div>
             </div>
 
             <div class="border-b pb-4">
               <label class="block text-sm font-bold text-stone-700 mb-2">併發症 (可複選)</label>
-              <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <label v-for="comp in cdComplicationsList" :key="comp.id" class="flex items-center space-x-2">
-                  <input type="checkbox" :value="comp.id" v-model="cd.complications" class="text-violet-600 focus:ring-violet-500 rounded">
+                  <input type="checkbox" :value="comp.id" v-model="cd.complications" class="text-violet-600 focus:ring-violet-500 rounded h-4 w-4">
                   <span>{{ comp.label }}</span>
                 </label>
               </div>
@@ -142,14 +142,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
               <div>
                 <label class="block text-sm font-bold text-stone-700 mb-2">使用止瀉藥 (如 Loperamide)</label>
-                <select v-model.number="cd.opiate" class="w-full p-2 border rounded outline-none">
+                <select v-model.number="cd.opiate" class="w-full p-2 border rounded outline-none text-sm md:text-base">
                   <option value="0">無</option>
                   <option value="1">有</option>
                 </select>
               </div>
               <div>
                 <label class="block text-sm font-bold text-stone-700 mb-2">腹部腫塊 (Mass)</label>
-                <select v-model.number="cd.mass" class="w-full p-2 border rounded outline-none">
+                <select v-model.number="cd.mass" class="w-full p-2 border rounded outline-none text-sm md:text-base">
                   <option value="0">無</option>
                   <option value="2">疑似 (Questionable)</option>
                   <option value="5">明確有 (Definite)</option>
@@ -160,7 +160,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-bold text-stone-700 mb-2">性別 (基準 Hct)</label>
-                <select v-model="cd.gender" class="w-full p-2 border rounded outline-none">
+                <select v-model="cd.gender" class="w-full p-2 border rounded outline-none text-sm md:text-base">
                   <option value="M">男性 (標準 47%)</option>
                   <option value="F">女性 (標準 42%)</option>
                 </select>
@@ -171,15 +171,13 @@
               </div>
               <div>
                 <label class="block text-sm font-bold text-stone-700 mb-2">體重偏差 (%)</label>
-                <div class="flex items-center space-x-2">
-                  <select v-model.number="cd.weightDiff" class="w-full p-2 border rounded outline-none">
-                    <option value="0">標準或超重</option>
-                    <option value="5">低於標準 5%</option>
-                    <option value="10">低於標準 10%</option>
-                    <option value="15">低於標準 15%</option>
-                    <option value="20">低於標準 20%</option>
-                  </select>
-                </div>
+                <select v-model.number="cd.weightDiff" class="w-full p-2 border rounded outline-none text-sm md:text-base">
+                  <option value="0">標準或超重</option>
+                  <option value="5">低於標準 5%</option>
+                  <option value="10">低於標準 10%</option>
+                  <option value="15">低於標準 15%</option>
+                  <option value="20">低於標準 20%</option>
+                </select>
               </div>
             </div>
           </div>
@@ -310,7 +308,7 @@
             cdScore += hctDiff * 6;
             
             // Weight difference
-            cdScore += cd.value.weightDiff; // 簡化 UI 直接選擇 %
+            cdScore += cd.value.weightDiff;
 
             cdScore = Math.round(cdScore);
 
