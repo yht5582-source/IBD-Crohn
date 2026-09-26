@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IBD 發炎性腸道疾病評估計算機</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- PWA Manifest -->
+  <script>
+    const manifestJSON = {
+      name: "IBD 疾病評估計算機",
+      short_name: "IBD 計算機",
+      description: "基於 ECCO/AGA 指引的 UC(Mayo) 與 CD(CDAI) 評估工具",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#fafaf9",
+      theme_color: "#7c3aed",
+      icons: [{
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237c3aed'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z'/%3E%3C/svg%3E",
+        sizes: "192x192",
+        type: "image/svg+xml"
+      }]
+    };
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifestJSON)], { type: 'application/json' }));
+    document.head.appendChild(link);
+  </script>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased min-h-screen pb-20">
+  <div id="app" class="max-w-5xl mx-auto px-4 py-6 md:py-10">
+    
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-violet-800 mb-2">IBD 疾病活躍度與治療決策計算機</h1>
+      <p class="text-sm text-stone-500">ECCO / AGA 指引：Mayo Score (UC) & CDAI (CD)</p>
+    </header>
+
+    <!-- 疾病類型切換 -->
+    <div class="flex justify-center mb-6">
+      <div class="inline-flex bg-stone-200 rounded-lg p-1">
+        <button @click="diseaseType = 'UC'" :class="diseaseType === 'UC' ? 'bg-white shadow text-violet-700 font-bold' : 'text-stone-600 hover:text-stone-800'" class="px-6 py-2 rounded-md transition-all text-sm md:text-base">
+          潰瘍性大腸炎 (UC) - Mayo Score
+        </button>
+        <button @click="diseaseType = 'CD'" :class="diseaseType === 'CD' ? 'bg-white shadow text-violet-700 font-bold' : 'text-stone-600 hover:text-stone-800'" class="px-6 py-2 rounded-md transition-all text-sm md:text-base">
+          克隆氏症 (CD) - CDAI
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 左側：表單輸入區 -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- ================= UC (Mayo Score) 表單 ================= -->
+        <div v-if="diseaseType === 'UC'" class="bg-white shadow-md rounded-xl overflow-hidden border border-stone-200 animate-fade-in">
+          <div class="bg-violet-600 px-5 py-3"><h2 class="text-white font-semibold">Mayo Score 評估項目</h2></div>
+          <div class="p-5 space-y-5">
+            <div>
+              <label class="block text-sm font-bold text-stone-700 mb-2">排便次數 (相較於正常狀態)</label>
+              <select v-model.number="uc.stool" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+                <option value="0">正常 (0分)</option>
+                <option value="1">每天多 1-2 次 (1分)</option>
+                <option value="2">每天多 3-4 次 (2分)</option>
+                <option value="3">每天多 5 次以上 (3分)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-stone-700 mb-2">直腸出血狀況</label>
+              <select v-model.number="uc.bleeding" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+                <option value="0">無出血 (0分)</option>
+                <option value="1">少於一半排便有血絲 (1分)</option>
+                <option value="2">多數排便伴隨明顯鮮血 (2分)</option>
+                <option value="3">只有血沒有糞便 (3分)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-stone-700 mb-2">內視鏡黏膜表現</label>
+              <select v-model.number="uc.endo" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+                <option value="0">正常或非活動性疾病 (0分)</option>
+                <option value="1">輕度：紅斑、血管紋理減少、輕微易脆 (1分)</option>
+                <option value="2">中度：明顯紅斑、無血管紋理、易脆、糜爛 (2分)</option>
+                <option value="3">重度：自發性出血、潰瘍 (3分)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-stone-700 mb-2">醫師整體評估 (PGA)</label>
+              <select v-model.number="uc.pga" class="w-full p-2 border rounded focus:ring-2 focus:ring-violet-300 outline-none">
+                <option value="0">正常 (0分)</option>
+                <option value="1">輕度疾病 (1分)</option>
+                <option value="2">中度疾病 (2分)</option>
+                <option value="3">重度疾病 (3分)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= CD (CDAI) 表單 ================= -->
+        <div v-if="diseaseType === 'CD'" class="bg-white shadow-md rounded-xl overflow-hidden border border-stone-200 animate-fade-in">
+          <div class="bg-violet-600 px-5 py-3">
+            <h2 class="text-white font-semibold">CDAI 評估項目 (克隆氏症)</h2>
+            <p class="text-xs text-violet-200">註：為符合門診快速評估，臨床症狀請填寫「過去7天的平均每日狀況」，系統將自動換算7天總和。</p>
+          </div>
+          <div class="p-5 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">每日稀軟便/水瀉次數</label>
+                <input type="number" v-model.number="cd.stools" min="0" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">腹痛程度 (平均)</label>
+                <select v-model.number="cd.pain" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
+                  <option value="0">無 (0分)</option>
+                  <option value="1">輕度 (1分)</option>
+                  <option value="2">中度 (2分)</option>
+                  <option value="3">重度 (3分)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">整體健康狀況 (平均)</label>
+                <select v-model.number="cd.wellbeing" class="w-full p-2 border rounded focus:ring-violet-300 outline-none">
+                  <option value="0">大致良好 (0分)</option>
+                  <option value="1">尚可 (1分)</option>
+                  <option value="2">不佳 (2分)</option>
+                  <option value="3">極差 (3分)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="border-b pb-4">
+              <label class="block text-sm font-bold text-stone-700 mb-2">併發症 (可複選)</label>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <label v-for="comp in cdComplicationsList" :key="comp.id" class="flex items-center space-x-2">
+                  <input type="checkbox" :value="comp.id" v-model="cd.complications" class="text-violet-600 focus:ring-violet-500 rounded">
+                  <span>{{ comp.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">使用止瀉藥 (如 Loperamide)</label>
+                <select v-model.number="cd.opiate" class="w-full p-2 border rounded outline-none">
+                  <option value="0">無</option>
+                  <option value="1">有</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">腹部腫塊 (Mass)</label>
+                <select v-model.number="cd.mass" class="w-full p-2 border rounded outline-none">
+                  <option value="0">無</option>
+                  <option value="2">疑似 (Questionable)</option>
+                  <option value="5">明確有 (Definite)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">性別 (基準 Hct)</label>
+                <select v-model="cd.gender" class="w-full p-2 border rounded outline-none">
+                  <option value="M">男性 (標準 47%)</option>
+                  <option value="F">女性 (標準 42%)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">病患 Hct 血球容積比 (%)</label>
+                <input type="number" v-model.number="cd.hct" class="w-full p-2 border rounded outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-stone-700 mb-2">體重偏差 (%)</label>
+                <div class="flex items-center space-x-2">
+                  <select v-model.number="cd.weightDiff" class="w-full p-2 border rounded outline-none">
+                    <option value="0">標準或超重</option>
+                    <option value="5">低於標準 5%</option>
+                    <option value="10">低於標準 10%</option>
+                    <option value="15">低於標準 15%</option>
+                    <option value="20">低於標準 20%</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 右側：結果輸出區 -->
+      <div class="lg:col-span-1">
+        <div class="sticky top-6 bg-white rounded-2xl shadow-xl overflow-hidden border-t-4 transition-colors duration-300" :class="resultData.colorClass">
+          
+          <div class="px-6 py-5 text-center border-b">
+            <h3 class="text-sm font-bold text-stone-500 uppercase tracking-wider mb-1">{{ diseaseType === 'UC' ? 'Mayo Score' : 'CDAI Score' }}</h3>
+            <div class="text-5xl font-extrabold mb-1" :class="resultData.textColor">{{ resultData.score }}</div>
+            <div class="text-lg font-bold" :class="resultData.textColor">{{ resultData.severity }}</div>
+          </div>
+
+          <div class="p-6 space-y-5 bg-stone-50">
+            <!-- 治療策略 -->
+            <div>
+              <div class="text-xs text-stone-500 font-bold uppercase mb-2">建議治療策略 (ECCO/AGA)</div>
+              <div class="font-bold text-stone-800 bg-white p-3 border rounded shadow-sm">
+                {{ resultData.strategyType }}
+              </div>
+              <ul class="mt-3 list-disc pl-5 text-sm text-stone-600 space-y-1">
+                <li v-for="med in resultData.medications" :key="med">{{ med }}</li>
+              </ul>
+            </div>
+
+            <!-- 預後評估 -->
+            <div>
+              <div class="text-xs text-stone-500 font-bold uppercase mb-2">預後與臨床處置 (Prognosis)</div>
+              <div class="text-sm text-stone-700 bg-white p-3 border rounded shadow-sm leading-relaxed">
+                {{ resultData.prognosis }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+      setup() {
+        const diseaseType = ref('UC'); // 'UC' or 'CD'
+
+        const uc = ref({
+          stool: 0,
+          bleeding: 0,
+          endo: 0,
+          pga: 0
+        });
+
+        const cd = ref({
+          stools: 0,
+          pain: 0,
+          wellbeing: 0,
+          complications: [],
+          opiate: 0,
+          mass: 0,
+          gender: 'M',
+          hct: 45,
+          weightDiff: 0
+        });
+
+        const cdComplicationsList = [
+          { id: 'joint', label: '關節炎 / 關節痛' },
+          { id: 'eye', label: '虹膜炎 / 葡萄膜炎' },
+          { id: 'skin', label: '結節性紅斑 / 壞疽性膿皮症' },
+          { id: 'mouth', label: '口瘡性潰瘍' },
+          { id: 'anal', label: '肛裂 / 廔管 / 膿瘍' },
+          { id: 'fever', label: '過去一週發燒 (>37.8°C)' }
+        ];
+
+        const resultData = computed(() => {
+          if (diseaseType.value === 'UC') {
+            const score = uc.value.stool + uc.value.bleeding + uc.value.endo + uc.value.pga;
+            let severity, colorClass, textColor, strategyType, medications, prognosis;
+
+            if (score <= 2 && uc.value.bleeding === 0) {
+              severity = '臨床緩解 (Remission)';
+              colorClass = 'border-emerald-500'; textColor = 'text-emerald-600';
+              strategyType = '維持療法 (Maintenance)';
+              medications = ['繼續維持原有劑量的 5-ASA', '定期內視鏡追蹤'];
+              prognosis = '預後極佳，黏膜癒合 (Mucosal healing) 能大幅降低未來大腸癌風險及復發率。';
+            } else if (score <= 5) {
+              severity = '輕度活動 (Mild)';
+              colorClass = 'border-yellow-400'; textColor = 'text-yellow-600';
+              strategyType = '逐步升級 (Step-up Therapy)';
+              medications = ['口服 5-ASA (Mesalamine) 大劑量 (>2.4g/day)', '局部給藥 (塞劑/灌腸液)', '若無效可考慮口服局部類固醇 (Budesonide MMX)'];
+              prognosis = '通常門診治療即可控制，多數患者對 5-ASA 反應良好，不需要使用免疫抑制劑。';
+            } else if (score <= 10) {
+              severity = '中度活動 (Moderate)';
+              colorClass = 'border-orange-500'; textColor = 'text-orange-600';
+              strategyType = '進階治療 (Step-up or Biologics)';
+              medications = ['口服全身性類固醇 (Prednisolone) 誘導緩解', '免疫抑制劑 (Azathioprine) 作為維持', '若類固醇依賴或無效：開始生物製劑 (Anti-TNF, Vedolizumab, Ustekinumab, 等)'];
+              prognosis = '需密切追蹤。若及早介入生物製劑，可避免腸道結構性破壞。有一定機率因藥物失效而需住院。';
+            } else {
+              severity = '重度活動 (Severe)';
+              colorClass = 'border-rose-600'; textColor = 'text-rose-600';
+              strategyType = '強力介入 / 由上而下 (Rescue / Top-down)';
+              medications = ['立即住院，靜脈注射類固醇 (IV Hydrocortisone)', '若 3-5 天內無反應：救援性 Infliximab 或 Cyclosporine', '照會大腸直腸外科評估全大腸切除術'];
+              prognosis = '預後嚴峻，有毒性巨結腸 (Toxic megacolon) 或腸穿孔的高風險。若藥物挽救失敗，手術切除為最終治癒手段。';
+            }
+            return { score, severity, colorClass, textColor, strategyType, medications, prognosis };
+          } 
+          
+          else {
+            // CDAI Logic
+            let cdScore = 0;
+            // 過去7天總和換算 (假設輸入為每日平均)
+            cdScore += (cd.value.stools * 7) * 2;
+            cdScore += (cd.value.pain * 7) * 5;
+            cdScore += (cd.value.wellbeing * 7) * 7;
+            cdScore += cd.value.complications.length * 20;
+            cdScore += cd.value.opiate * 30;
+            cdScore += cd.value.mass * 10;
+            
+            // Hct difference
+            const standardHct = cd.value.gender === 'M' ? 47 : 42;
+            let hctDiff = standardHct - cd.value.hct;
+            if(hctDiff < 0) hctDiff = 0; // 如果貧血才加分
+            cdScore += hctDiff * 6;
+            
+            // Weight difference
+            cdScore += cd.value.weightDiff; // 簡化 UI 直接選擇 %
+
+            cdScore = Math.round(cdScore);
+
+            let severity, colorClass, textColor, strategyType, medications, prognosis;
+
+            if (cdScore < 150) {
+              severity = '臨床緩解 (Remission)';
+              colorClass = 'border-emerald-500'; textColor = 'text-emerald-600';
+              strategyType = '維持療法 (Maintenance)';
+              medications = ['無症狀維持期', '免疫抑制劑或生物製劑維持劑量', '戒菸 (CD 預後最重要因子)'];
+              prognosis = '預後良好，重點在於維持深層緩解 (Deep remission) 及內視鏡下黏膜癒合，避免未來狹窄或廔管產生。';
+            } else if (cdScore <= 220) {
+              severity = '輕度活動 (Mild)';
+              colorClass = 'border-yellow-400'; textColor = 'text-yellow-600';
+              strategyType = '逐步升級 (Step-up)';
+              medications = ['若病灶在迴盲部：口服 Budesonide', '症狀控制 (止痛、止瀉)', '抗生素 (若伴隨感染考量)'];
+              prognosis = '5-ASA 在 CD 角色受限。多數輕症患者預後尚可，但須防範疾病隱匿性進展導致腸道狹窄。';
+            } else if (cdScore <= 450) {
+              severity = '中重度活動 (Moderate to Severe)';
+              colorClass = 'border-orange-500'; textColor = 'text-orange-600';
+              strategyType = '由上而下 (Top-down) 或 高階生物治療';
+              medications = ['早期介入生物製劑 (Anti-TNF, Ustekinumab, Vedolizumab) 併用/不併用 Azathioprine', '全身性類固醇誘導緩解 (不建議長期使用)'];
+              prognosis = '此階段患者發生穿透性 (penetrating) 或狹窄性 (stricturing) 併發症風險極高。「Top-down」提早使用生物製劑可顯著改變疾病自然史並降低手術率。';
+            } else {
+              severity = '極重度 (Fulminant / Severe)';
+              colorClass = 'border-rose-600'; textColor = 'text-rose-600';
+              strategyType = '緊急住院與手術評估';
+              medications = ['住院 IV 類固醇或生物製劑救援', '全靜脈營養 (TPN)', '外科介入 (腸段切除、廔管引流)'];
+              prognosis = '常伴隨腸道阻塞、膿瘍、嚴重體重減輕。內科藥物若無法在一週內控制，需緊急外科手術，術後復發率仍高。';
+            }
+            return { score: cdScore, severity, colorClass, textColor, strategyType, medications, prognosis };
+          }
+        });
+
+        return { diseaseType, uc, cd, cdComplicationsList, resultData };
+      }
+    }).mount('#app');
+  </script>
+  <style>
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</body>
+</html>
