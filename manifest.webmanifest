@@ -1,0 +1,11 @@
+{
+  "name": "IBD 疾病評估計算機",
+  "short_name": "IBD 計算機",
+  "description": "UC (Mayo / Truelove & Witts) 與 CD (CDAI / HBI) 評估與治療決策輔助",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#7c3aed",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
