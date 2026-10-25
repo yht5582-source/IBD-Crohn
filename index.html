@@ -42,6 +42,10 @@
           克隆氏症 (CD)
         </button>
       </div>
+      <div class="inline-flex bg-stone-200 rounded-lg p-1 text-sm" role="tablist">
+        <button role="tab" :aria-selected="view === 'calc'" @click="view = 'calc'" :class="view === 'calc' ? 'bg-white shadow text-violet-700 font-bold' : 'text-stone-600'" class="px-3 py-2 rounded-md">評估與治療</button>
+        <button role="tab" :aria-selected="view === 'nhi'" @click="view = 'nhi'" :class="view === 'nhi' ? 'bg-white shadow text-violet-700 font-bold' : 'text-stone-600'" class="px-3 py-2 rounded-md">健保給付</button>
+      </div>
       <div class="flex gap-2 text-sm">
         <button @click="loadExample" class="px-3 py-2 rounded-md border border-violet-300 text-violet-700 hover:bg-violet-50">載入示例</button>
         <button @click="resetForm" class="px-3 py-2 rounded-md border border-stone-300 text-stone-600 hover:bg-stone-100">清除</button>
@@ -49,7 +53,7 @@
     </div>
     <p v-if="isExample" class="text-center text-xs text-amber-700 -mt-3 mb-4">示例：虛構病例，僅供操作示範</p>
 
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div v-if="view === 'calc'" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <!-- 左側：表單輸入區 -->
       <div class="lg:col-span-3 space-y-6">
 
@@ -373,6 +377,178 @@
       </div>
     </div>
 
+    <!-- ================= 健保給付 ================= -->
+    <div v-if="view === 'nhi'" class="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-fade-in">
+      <div class="lg:col-span-3 space-y-6">
+        <section class="bg-white shadow-md rounded-xl overflow-hidden border border-stone-200">
+          <div class="bg-violet-600 px-5 py-3">
+            <h2 class="text-white font-semibold">1. 初次申請條件｜{{ diseaseType === 'UC' ? '潰瘍性結腸炎' : '克隆氏症' }}</h2>
+            <p class="text-xs text-violet-200">依健保署 {{ nhiVersion }} 逐條比對。分數欄留白時自動帶入「評估與治療」分頁的計算結果。</p>
+          </div>
+          <div class="p-5 space-y-5">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label for="n-age" class="block text-sm font-bold text-stone-700 mb-1">年齡 (歲)</label>
+                <input id="n-age" type="number" inputmode="numeric" min="0" v-model="nhiIn.age" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+              </div>
+              <div>
+                <label for="n-months" class="block text-sm font-bold text-stone-700 mb-1">傳統治療連續月數</label>
+                <input id="n-months" type="number" inputmode="decimal" min="0" step="any" v-model="nhiIn.months" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+              </div>
+              <template v-if="diseaseType === 'CD'">
+                <div v-if="!nhiPed">
+                  <label for="n-cdai" class="block text-sm font-bold text-stone-700 mb-1">CDAI</label>
+                  <input id="n-cdai" type="number" inputmode="numeric" v-model="nhiIn.cdai" :placeholder="calcCdai !== null ? '帶入 ' + calcCdai : '請填'" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+                <div v-else>
+                  <label for="n-pcdai" class="block text-sm font-bold text-stone-700 mb-1">PCDAI</label>
+                  <input id="n-pcdai" type="number" inputmode="numeric" v-model="nhiIn.pcdai" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+              </template>
+              <template v-else>
+                <template v-if="!nhiPed">
+                  <div>
+                    <label for="n-mayo" class="block text-sm font-bold text-stone-700 mb-1">Mayo score (完整)</label>
+                    <input id="n-mayo" type="number" inputmode="numeric" v-model="nhiIn.mayo" :placeholder="calcMayo !== null ? '帶入 ' + calcMayo : '需內視鏡'" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                  </div>
+                  <div>
+                    <label for="n-endo" class="block text-sm font-bold text-stone-700 mb-1">內視鏡 subscore</label>
+                    <input id="n-endo" type="number" inputmode="numeric" min="0" max="3" v-model="nhiIn.endo" :placeholder="calcEndo !== null ? '帶入 ' + calcEndo : '0–3'" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                  </div>
+                </template>
+                <div v-else>
+                  <label for="n-pucai" class="block text-sm font-bold text-stone-700 mb-1">PUCAI</label>
+                  <input id="n-pucai" type="number" inputmode="numeric" v-model="nhiIn.pucai" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+                <div>
+                  <label for="n-ext" class="block text-sm font-bold text-stone-700 mb-1">病灶範圍</label>
+                  <select id="n-ext" v-model="uc.extent" class="w-full p-2 border rounded outline-none text-sm">
+                    <option value="E1">E1 直腸型</option>
+                    <option value="E2">E2 左側</option>
+                    <option value="E3">E3 廣泛</option>
+                  </select>
+                </div>
+              </template>
+            </div>
+
+            <div>
+              <div class="text-sm font-bold text-stone-700 mb-2">基本條件與傳統治療</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <label v-for="f in nhiBaseFields" :key="f.k" class="flex items-start gap-2">
+                  <input type="checkbox" v-model="nhiIn[f.k]" class="mt-0.5 h-4 w-4 rounded text-violet-600">
+                  <span>{{ f.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-sm font-bold text-stone-700 mb-2">{{ diseaseType === 'UC' ? '急性嚴重 UC 路徑' : '疾病狀況' }}</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <label v-for="f in nhiDzFields" :key="f.k" class="flex items-start gap-2">
+                  <input type="checkbox" v-model="nhiIn[f.k]" class="mt-0.5 h-4 w-4 rounded text-violet-600">
+                  <span>{{ f.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-sm font-bold text-stone-700 mb-2">須排除使用之情形</div>
+              <div class="grid grid-cols-1 gap-2 text-sm">
+                <label v-for="e in nhiExclList" :key="e.id" class="flex items-start gap-2">
+                  <input type="checkbox" v-model="nhiIn.excl" :value="e.id" class="mt-0.5 h-4 w-4 rounded text-rose-600">
+                  <span>{{ e.label }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white shadow-md rounded-xl overflow-hidden border border-stone-200">
+          <div class="bg-violet-600 px-5 py-3"><h2 class="text-white font-semibold">2. 續用評估</h2></div>
+          <div class="p-5 space-y-4">
+            <template v-if="diseaseType === 'CD'">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="c-base" class="block text-sm font-bold text-stone-700 mb-1">前次 / 初次申請 CDAI</label>
+                  <input id="c-base" type="number" inputmode="numeric" v-model="contIn.baseCdai" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+                <div>
+                  <label for="c-cur" class="block text-sm font-bold text-stone-700 mb-1">目前 CDAI</label>
+                  <input id="c-cur" type="number" inputmode="numeric" v-model="contIn.curCdai" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-4 text-sm">
+                <label class="flex items-center gap-2"><input type="checkbox" v-model="contIn.fistulaHealed" class="h-4 w-4 rounded text-violet-600">廔管痊癒</label>
+                <label class="flex items-center gap-2"><input type="checkbox" v-model="contIn.fistulaFewer" class="h-4 w-4 rounded text-violet-600">廔管數量減少</label>
+              </div>
+              <p class="text-xs text-stone-500">之後每次續用：需維持前一療程有效或部分有效緩解時之 CDAI 分數。</p>
+            </template>
+            <template v-else>
+              <div class="inline-flex bg-stone-200 rounded-md p-0.5 text-sm">
+                <button @click="contIn.stage = 'first'" :class="contIn.stage === 'first' ? 'bg-white text-violet-700 font-bold' : 'text-stone-600'" class="px-3 py-1 rounded">第一次續用 (partial Mayo)</button>
+                <button @click="contIn.stage = 'second'" :class="contIn.stage === 'second' ? 'bg-white text-violet-700 font-bold' : 'text-stone-600'" class="px-3 py-1 rounded">第二次以後 (Mayo)</button>
+              </div>
+              <div v-if="contIn.stage === 'first'" class="grid grid-cols-2 gap-4">
+                <div v-for="f in contFirstFields" :key="f.k">
+                  <label :for="'c-'+f.k" class="block text-sm font-bold text-stone-700 mb-1">{{ f.label }}</label>
+                  <input :id="'c-'+f.k" type="number" inputmode="numeric" min="0" v-model="contIn[f.k]" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+              </div>
+              <div v-else class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="c-mayo" class="block text-sm font-bold text-stone-700 mb-1">Mayo score</label>
+                  <input id="c-mayo" type="number" inputmode="numeric" v-model="contIn.mayo" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+                <div>
+                  <label for="c-endo" class="block text-sm font-bold text-stone-700 mb-1">內視鏡 subscore</label>
+                  <input id="c-endo" type="number" inputmode="numeric" v-model="contIn.endo" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-violet-300">
+                </div>
+              </div>
+            </template>
+            <div class="text-sm p-3 rounded border" :class="{ 'bg-emerald-50 border-emerald-300 text-emerald-800': cont.status === 'effective', 'bg-sky-50 border-sky-300 text-sky-800': cont.status === 'partial', 'bg-rose-50 border-rose-300 text-rose-800': cont.status === 'fail', 'bg-stone-50 border-stone-200 text-stone-600': cont.status === 'pending' }">{{ cont.text }}</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="lg:col-span-2">
+        <div class="sticky top-4 bg-white rounded-2xl shadow-xl overflow-hidden border-t-4" :class="nhiRes.eligible ? 'border-emerald-500' : 'border-stone-400'">
+          <div class="px-6 py-5 text-center border-b">
+            <h3 class="text-sm font-bold text-stone-500 tracking-wider mb-1">健保 {{ nhiRes.rule }}</h3>
+            <div class="text-2xl font-extrabold" :class="nhiRes.eligible ? 'text-emerald-600' : 'text-stone-600'">{{ nhiRes.eligible ? '符合初次申請條件' : '尚未符合' }}</div>
+            <div class="text-xs text-stone-500 mt-1">事前審查｜{{ nhiRes.form }}</div>
+          </div>
+          <div class="p-5 space-y-5 bg-stone-50 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
+            <div v-if="nhiRes.blockers.length" class="space-y-2">
+              <div v-for="b in nhiRes.blockers" :key="b" class="text-sm p-3 rounded border bg-rose-50 border-rose-300 text-rose-800">✕ {{ b }}</div>
+            </div>
+            <div v-for="p in nhiRes.paths" :key="p.id" class="bg-white border rounded p-3">
+              <div class="font-bold text-sm mb-1" :class="p.ok ? 'text-emerald-700' : 'text-stone-700'">{{ p.ok ? '✓ ' : '' }}{{ p.label }}</div>
+              <ul class="text-sm space-y-1">
+                <li v-for="i in p.items" :key="i.text" class="flex gap-2"><span :class="i.ok ? 'text-emerald-600' : 'text-stone-400'">{{ i.ok ? '✓' : '○' }}</span><span :class="i.ok ? 'text-stone-800' : 'text-stone-500'">{{ i.text }}</span></li>
+              </ul>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500 font-bold uppercase mb-2">給付品項與療程</div>
+              <div class="space-y-2">
+                <div v-for="d in nhiRes.drugs" :key="d.id" class="bg-white border rounded p-3 text-sm" :class="d.avail ? '' : 'opacity-60'">
+                  <div class="font-bold" :class="d.avail ? 'text-violet-700' : 'text-stone-500'">{{ d.name }} <span v-if="!d.avail" class="text-xs font-normal text-rose-600">— {{ d.why }}</span></div>
+                  <div class="text-stone-600">誘導：{{ d.induct }}</div>
+                  <div class="text-stone-600">維持 / 總療程：{{ d.total }}</div>
+                  <div class="text-stone-600">續用申請：{{ d.cont }}</div>
+                  <div v-if="d.avail && d.note" class="text-amber-700 text-xs mt-1">{{ d.note }}</div>
+                </div>
+              </div>
+            </div>
+            <ul class="list-disc pl-5 text-xs text-stone-600 space-y-1">
+              <li v-for="t in nhiRes.notes" :key="t">{{ t }}</li>
+            </ul>
+            <div class="text-xs p-3 rounded border bg-amber-50 border-amber-300 text-amber-800">注意：AGA 2024/2025 建議中重度病人「早期」使用進階治療，但健保初次申請仍要求傳統治療 ≥6 個月（或 ASUC / 廔管 / 反覆手術路徑），兩者時間點可能不一致。</div>
+            <a href="https://www.nhi.gov.tw/ch/cp-7593-ad2a9-3397-1.html" target="_blank" rel="noopener" class="block text-xs text-violet-700 underline">健保署 最新版藥品給付規定（分章節）→ 第八節</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer class="mt-10 text-xs text-stone-500 space-y-3 border-t pt-6">
       <div>
         <div class="font-bold text-stone-600 mb-1">參考文獻</div>
@@ -387,10 +563,11 @@
           <li>Rubin DT, et al. ACG Clinical Guideline Update: Ulcerative Colitis in Adults. Am J Gastroenterol 2025;120:1187–1224.</li>
           <li>Bischoff SC, et al. ESPEN guideline on Clinical Nutrition in inflammatory bowel disease. Clin Nutr 2023;42:352–79.</li>
           <li>Turner D, et al. STRIDE-II. Gastroenterology 2021;160:1570–83.</li>
+          <li>衛生福利部中央健康保險署。藥品給付規定 第八節 免疫製劑（115.9.22 更新）：8.2.4.7 克隆氏症、8.2.4.9 潰瘍性結腸炎。</li>
         </ol>
       </div>
       <p><b>免責聲明：</b>本工具為臨床決策輔助，所有資料僅在瀏覽器端運算、不上傳。實際治療需考量年齡、共病、懷孕、感染風險、既往用藥、台灣健保給付規定與多專科團隊判斷，不可取代主治醫師之專業決定。藥物劑量請以台灣仿單為準。</p>
-      <p class="text-stone-400">v2.0 · 2026-10-25</p>
+      <p class="text-stone-400">v2.1 · 2026-10-25 · 健保條文：藥品給付規定第八節 8.2.4.7 / 8.2.4.9（115.9.22 版）</p>
     </footer>
   </div>
 
@@ -669,7 +846,203 @@ const IBD = (() => {
     return lines.join('\n');
   }
 
-  return { num, mayo, truelove, ucPlan, cdai, hbi, stdWeight, cdPlan, summary, CDAI_COMPS };
+  // ---------- 台灣健保 藥品給付規定 第八節 (115.9.22 版) ----------
+  // CD 成人 8.2.4.7.1、兒童 8.2.4.7.2；UC 成人 8.2.4.9.1、兒童 8.2.4.9.2
+  const NHI_VERSION = '藥品給付規定 第八節 免疫製劑（115.9.22 更新）';
+  const NHI_EXCL = [
+    { id: 'preg', label: '懷孕或授乳中（兒童克隆氏症條文未列）' },
+    { id: 'infection', label: '活動性感染症' },
+    { id: 'tb', label: '結核病未完整治療（潛伏結核治療未達 4 週）' },
+    { id: 'cancer', label: '惡性腫瘤或癌前病變（已充分治療達 10 年以上者除外）' },
+    { id: 'highInf', label: '高感染風險：慢性腿部潰瘍、導尿管留置、引流管、未摘除之感染人工關節、頑固 / 復發性胸腔感染' },
+    { id: 'ms', label: '多發性硬化症' }
+  ];
+  const NHI_DRUGS = {
+    CD: [
+      { id: 'ada', name: 'Adalimumab', induct: '6 週 4 劑：160 → 80 mg (第 2 週) → 40 mg (第 4 週)，之後 40 mg q2w', total: '總療程 54 週 28 劑', cont: '每 24 週評估（12 劑）' },
+      { id: 'ifx', name: 'Infliximab', induct: 'IV 5 mg/kg 第 0、2、6 週（6 週 3 劑）；或 IV 第 0、2 週後第 6 週起 SC 120 mg q2w', total: 'IV 46 週 8 劑；IV 2 劑 + SC 24 劑共 52 週（療效持續至 54 週）', cont: '16 週 2 劑或 24 週 3 劑；SC 每 24 週 12 劑' },
+      { id: 'vdz', name: 'Vedolizumab', induct: 'IV 300 mg 第 0、2、6 週；或 IV 第 0、2 週後第 6 週起 SC 108 mg q2w', total: 'IV 46 週 8 劑；IV 2 劑 + SC 24 劑共 52 週', cont: '16 週 2 劑或 24 週 3 劑；SC 每 24 週 12 劑' },
+      { id: 'ust', name: 'Ustekinumab', induct: '第 0 週 IV 1 劑（≤55 kg 260 mg；55–85 kg 390 mg；>85 kg 520 mg），8 週評估', total: '44 週 5 劑或 48 週 7 劑', cont: '每 24 週（2 或 3 劑）；SC 90 mg q12w 或 q8w（部分有效緩解者 q8w）' },
+      { id: 'rzb', name: 'Risankizumab', induct: 'IV 600 mg 第 0、4、8 週（8 週 3 劑）', total: 'IV 3 劑 + SC 360 mg q8w 5 劑共 44 週（療效持續至 52 週）', cont: '16 週 2 劑或 24 週 3 劑' },
+      { id: 'upa', name: 'Upadacitinib', induct: '45 mg/日 12 週（限 45 mg 規格）', total: '之後 15 mg/日，總療程 60 週', cont: '每 24 週評估', bioFailOnly: true, note: '限其他生物製劑失敗或無法耐受；排除血栓風險；不建議併用 azathioprine' }
+    ],
+    UC: [
+      { id: 'gol', name: 'Golimumab', induct: '200 mg → 第 2 週 100 mg（2 週 2 劑）', total: '50 mg q4w（>80 kg 100 mg），總療程 50 週 14 劑', cont: '24 週 2 次為限' },
+      { id: 'ada', name: 'Adalimumab', induct: '160 → 80 mg (第 2 週) → 40 mg (第 4、6 週)（6 週 4 劑）', total: '40 mg q2w，總療程 54 週 28 劑', cont: '24 週 2 次為限' },
+      { id: 'vdz', name: 'Vedolizumab', induct: 'IV 300 mg 第 0、2、6 週；或 IV 2 劑後 SC 108 mg q2w', total: 'IV 46 週 8 劑；或 IV 2 劑 + SC 24 劑共 52 週', cont: '24 週 3 劑或 16 週 2 劑；SC 每 24 週 12 劑' },
+      { id: 'ifx', name: 'Infliximab', induct: 'IV 5 mg/kg 第 0、2、6 週；或 IV 2 劑後 SC 120 mg q2w', total: 'IV 46 週 8 劑；或 IV 2 劑 + SC 24 劑共 52 週', cont: '24 週 3 劑或 16 週 2 劑；SC 每 24 週 12 劑' },
+      { id: 'tof', name: 'Tofacitinib', induct: '10 mg BID 8 週', total: '之後 5 mg BID 或 XR 11 mg QD，總療程 56 週', cont: '24 週 2 次為限', bioFailOnly: true, note: '限其他生物製劑失敗或無法耐受；排除血栓風險；不建議併用 azathioprine、cyclosporine' },
+      { id: 'ust', name: 'Ustekinumab', induct: '第 0 週 IV 1 劑（≤55 kg 260 mg；55–85 kg 390 mg；>85 kg 520 mg）', total: '第 8 週起 SC 90 mg q12w 或 q8w，44 週 5 劑或 48 週 7 劑', cont: '24 週 2 或 3 次' },
+      { id: 'upa', name: 'Upadacitinib', induct: '45 mg/日 8 週（限 45 mg 規格）', total: '之後 15 mg/日，總療程 56 週', cont: '24 週為限', bioFailOnly: true, note: '限其他生物製劑失敗或無法耐受；排除血栓風險；不建議併用 azathioprine、cyclosporine' }
+    ]
+  };
+  const NHI_NOT_COVERED = {
+    CD: 'Mirikizumab、guselkumab、certolizumab：健保未給付於克隆氏症（第八節 8.2.4.7 未列）',
+    UC: 'Risankizumab、mirikizumab、guselkumab、ozanimod、etrasimod、filgotinib：健保未給付於潰瘍性結腸炎（第八節 8.2.4.9 未列）'
+  };
+
+  // n: { disease, age, card, imaging, tx5asa, txSteroid, txImm, months, sideEffect, reapply, bioFail, thrombRisk, excl[],
+  //      CD: cdai, notSurgical, fistula, fistulaSurgery, surgery2, pcdai, growth, nutritionFail, fistulaPed
+  //      UC: extent, mayo, endo, endoOk, bxExcl, cdiffExcl, ivSteroid5d, pucai }
+  function nhi(n) {
+    const age = num(n.age);
+    const ped = age !== null && age < 18;
+    const dz = n.disease;
+    const months = num(n.months) || 0;
+    const anyConv = !!(n.tx5asa || n.txSteroid || n.txImm);
+    const allConv = !!(n.tx5asa && n.txSteroid && n.txImm);
+    const paths = [], notes = [], blockers = [];
+    const P = (id, label, ok, items) => paths.push({ id, label, ok, items });
+    const it = (ok, text) => ({ ok: !!ok, text });
+    let rule, form;
+
+    if (age === null) blockers.push('請填年齡');
+    const exclHit = NHI_EXCL.filter(e => (n.excl || []).includes(e.id) && !(ped && dz === 'CD' && e.id === 'preg'));
+
+    if (dz === 'CD') {
+      const cdaiV = num(n.cdai);
+      if (!ped) {
+        rule = '8.2.4.7.1 克隆氏症 成人'; form = '附表二十六之一（申請表）＋ 附表二十六之二（CDAI）';
+        // 再次申請（總療程結束 >3 個月後）：傳統治療改為「及/或」連續 >3 個月
+        const conv1 = n.reapply ? anyConv && months > 3 : anyConv && months > 6;
+        const convAll = n.reapply ? anyConv && months > 3 : allConv && months > 6;
+        const convLbl = n.reapply ? '5-ASA、類固醇及/或免疫抑制劑連續治療 >3 個月（再次申請）' : null;
+        P(1, '(1) 充分治療仍無法控制', (conv1 && cdaiV !== null && cdaiV >= 300 || !!n.sideEffect) && !!n.notSurgical, [
+          it(conv1, convLbl || '5-ASA、類固醇及/或免疫抑制劑充分治療超過 6 個月'),
+          it(cdaiV !== null && cdaiV >= 300 || n.sideEffect, `CDAI ≥300（目前 ${cdaiV ?? '未填'}）或產生嚴重藥物副作用`),
+          it(n.notSurgical, '病況不適合手術')
+        ]);
+        P(2, '(2) 肛門周圍或腹壁廔管無法癒合', !!n.fistula && (convAll || !!n.fistulaSurgery) && cdaiV !== null && cdaiV >= 100, [
+          it(n.fistula, '肛門周圍廔管或腹壁廔管仍無法癒合'),
+          it(convAll || n.fistulaSurgery, convLbl || '5-ASA、類固醇及免疫抑制劑（三者）充分治療超過 6 個月，或已接受外科手術'),
+          it(cdaiV !== null && cdaiV >= 100, `CDAI ≥100（目前 ${cdaiV ?? '未填'}）`)
+        ]);
+        P(3, '(3) 一年內因併發症手術 ≥2 次', !!n.surgery2 && (n.reapply ? convAll : allConv) && cdaiV !== null && cdaiV >= 100, [
+          it(n.surgery2, '充分治療下，一年內因克隆氏症併發症接受 ≥2 次手術'),
+          it(n.reapply ? convAll : allConv, convLbl || '5-ASA、類固醇及免疫抑制劑（三者）充分治療'),
+          it(cdaiV !== null && cdaiV >= 100, `CDAI ≥100（目前 ${cdaiV ?? '未填'}）`)
+        ]);
+        notes.push('續用：有效緩解 = CDAI ≤150 或廔管痊癒；部分有效 = CDAI 下降 ≥100 或廔管數量減少');
+        notes.push('連續 2 次於總療程結束後復發 (CDAI ≥300) 且第 2 次在藥效終止 3 個月內 → 可持續使用，每 24 週續用審查；連續 2 年（4 次評估）CDAI <150 應考慮停藥');
+      } else {
+        rule = '8.2.4.7.2 克隆氏症 兒童'; form = '附表二十六之三（申請表）＋ 附表二十六之四（PCDAI）';
+        const pc = num(n.pcdai);
+        if (age < 6) blockers.push('兒童克隆氏症限 6 歲以上');
+        P(1, '(1) 類固醇＋免疫抑制劑治療 >3 個月仍無法控制', (n.txSteroid && n.txImm && months > 3 && pc !== null && pc > 30) || !!n.sideEffect, [
+          it(n.txSteroid && n.txImm && months > 3, '皮質類固醇及免疫抑制劑充分治療超過 3 個月'),
+          it(pc !== null && pc > 30 || n.sideEffect, `PCDAI >30（目前 ${pc ?? '未填'}）或過敏 / 嚴重副作用`)
+        ]);
+        P(2, '(2) 腹部或肛門廔管合併生長遲緩', !!n.fistulaPed && !!n.growth, [
+          it(n.fistulaPed, '腹部或肛門廔管'), it(n.growth, '生長遲緩（height velocity Z score −1 至 −2.5）')
+        ]);
+        P(3, '(3) 發作合併生長遲緩，營養與免疫抑制劑治療失敗', !!n.growth && !!n.nutritionFail, [
+          it(n.growth, '生長遲緩（height velocity Z score −1 至 −2.5）'), it(n.nutritionFail, '營養治療與免疫抑制劑治療失敗')
+        ]);
+        notes.push('續用：第 3 劑後 PCDAI 降低 ≥15；連續 2 年（4 次評估）PCDAI <10 應考慮停藥');
+      }
+      if (!n.card) blockers.push('需領有克隆氏症重大傷病證明');
+      if (!n.imaging) blockers.push('申請時需附影像診斷評估報告');
+    } else {
+      const mayoV = num(n.mayo), endoV = num(n.endo);
+      if (n.extent === 'E1') blockers.push('直腸型 (E1) 潰瘍性結腸炎排除給付');
+      if (!ped) {
+        rule = '8.2.4.9.1 潰瘍性結腸炎 成人'; form = '附表二十六之五（申請表）＋ 附表二十六之六（Mayo Score）';
+        const conv = n.reapply ? anyConv && months > 3 : allConv && months >= 6;
+        P(1, '(1) 傳統治療無效之中重度', !!n.card && n.extent !== 'E1' && (conv || !!n.sideEffect) && mayoV !== null && mayoV >= 9 && endoV !== null && endoV >= 2, [
+          it(n.card && n.extent !== 'E1', '領有潰瘍性結腸炎重大傷病卡（直腸型排除）'),
+          it(conv || n.sideEffect, n.reapply ? '5-ASA、類固醇及/或免疫抑制劑連續治療 >3 個月（再次申請）' : '5-ASA、類固醇及免疫調節劑 (AZA / 6-MP) 連續充分治療 ≥6 個月無效，或對 5-ASA / 免疫調節劑嚴重副作用'),
+          it(mayoV !== null && mayoV >= 9, `Mayo score ≥9（目前 ${mayoV ?? '未填'}）`),
+          it(endoV !== null && endoV >= 2, `內視鏡 subscore ≥2（目前 ${endoV ?? '未填'}；需 2 個月內大腸鏡報告含彩色照片）`)
+        ]);
+        P(2, '(2) 急性嚴重潰瘍性結腸炎', !!n.endoOk && !!n.bxExcl && !!n.cdiffExcl && mayoV === 12 && !!n.ivSteroid5d, [
+          it(n.endoOk, '內視鏡下符合潰瘍性結腸炎'),
+          it(n.bxExcl, '病理切片排除 CMV 腸炎、阿米巴結腸炎、淋巴癌'),
+          it(n.cdiffExcl, '糞便檢測排除 C. difficile'),
+          it(mayoV === 12, `Mayo score 為 12 分（目前 ${mayoV ?? '未填'}）`),
+          it(n.ivSteroid5d, '全劑量靜脈類固醇（如 methylprednisolone 40–60 mg/日）連續 5 天無效')
+        ]);
+        notes.push('第一次續用：partial Mayo 較初次申請減少 ≥2 且直腸出血減少 ≥1；第二次續用：Mayo ≤6 且內視鏡 ≤1');
+        notes.push('連續 2 年（4 次評估）Mayo ≤2 且內視鏡 ≤1 應考慮停藥');
+      } else {
+        rule = '8.2.4.9.2 潰瘍性結腸炎 兒童'; form = '附表二十六之七（申請表）＋ 附表二十六之八（PUCAI）';
+        const pu = num(n.pucai);
+        if (age < 5) blockers.push('兒童潰瘍性結腸炎：adalimumab 限 5 歲以上未滿 6 歲、infliximab 限 6 歲以上');
+        const conv = allConv && months >= 3;
+        P(1, '(1) 傳統治療無效', !!n.card && n.extent !== 'E1' && (conv || !!n.sideEffect) && (pu !== null && pu >= 35 || (!!n.growth && !!n.nutritionFail)), [
+          it(n.card && n.extent !== 'E1', '領有潰瘍性結腸炎重大傷病卡（直腸型排除）'),
+          it(conv || n.sideEffect, '5-ASA、類固醇及免疫調節劑連續治療 ≥3 個月無效，或嚴重副作用'),
+          it(pu !== null && pu >= 35 || (n.growth && n.nutritionFail), `PUCAI ≥35（目前 ${pu ?? '未填'}），或生長遲緩且營養與免疫抑制劑治療失敗`)
+        ]);
+        P(2, '(2) 急性嚴重潰瘍性結腸炎', !!n.endoOk && !!n.bxExcl && !!n.cdiffExcl && pu !== null && pu >= 50 && !!n.ivSteroid5d, [
+          it(n.endoOk, '內視鏡下符合潰瘍性結腸炎'),
+          it(n.bxExcl, '病理切片排除 CMV 腸炎、阿米巴結腸炎、淋巴癌'),
+          it(n.cdiffExcl, '糞便檢測排除 C. difficile'),
+          it(pu !== null && pu >= 50, `PUCAI（條文原文「為 50 分」；目前 ${pu ?? '未填'}）`),
+          it(n.ivSteroid5d, '全劑量靜脈類固醇連續 5 天無效')
+        ]);
+        notes.push('續用：PUCAI 較初次申請減少 20 分或 PUCAI <10；連續 2 年（4 次評估）PUCAI <5 應考慮停藥');
+      }
+    }
+
+    if (exclHit.length) blockers.push('符合排除使用情形：' + exclHit.map(e => e.label).join('；'));
+    const pathOk = paths.some(p => p.ok);
+    const eligible = pathOk && blockers.length === 0;
+
+    // 可申請藥物
+    let drugs;
+    if (!ped) {
+      drugs = NHI_DRUGS[dz].map(d => {
+        let avail = true, why = d.note || '';
+        if (d.bioFailOnly && !n.bioFail) { avail = false; why = '限其他生物製劑治療失敗或無法耐受者'; }
+        if (d.bioFailOnly && n.thrombRisk) { avail = false; why = '有血栓風險，條文要求排除'; }
+        return { ...d, avail, why };
+      });
+    } else if (dz === 'CD') {
+      drugs = [
+        { id: 'ada', name: 'Adalimumab', induct: '≥40 kg：160 → 80 → 40 mg，之後 40 mg q2w；<40 kg：80 → 40 → 20 mg，之後 20 mg q2w', total: '54 週 28 劑', cont: '每 24 週評估', avail: age >= 6 },
+        { id: 'ifx', name: 'Infliximab', induct: 'IV 5 mg/kg 第 0、2、6 週', total: '每 8 週 5 mg/kg，46 週 8 劑', cont: '16 週 2 劑或 24 週 3 劑', avail: age >= 6 },
+        { id: 'rzb', name: 'Risankizumab', induct: 'IV 600 mg 第 0、4、8 週', total: 'SC 360 mg q8w，44 週 8 劑', cont: '16 週 2 劑或 24 週 3 劑', avail: age >= 16, why: age >= 16 ? '' : '限 16 歲以上未滿 18 歲' }
+      ];
+    } else {
+      drugs = [
+        { id: 'ifx', name: 'Infliximab', induct: 'IV 5 mg/kg 第 0、2、6 週', total: '每 8 週 5 mg/kg，46 週 8 劑', cont: '24 週 3 劑及 16 週 2 劑各 1 次', avail: age >= 6, why: age >= 6 ? '' : '限 6 歲以上' },
+        { id: 'ada', name: 'Adalimumab', induct: '20–<40 kg：80 → 40 mg，之後 40 mg q2w；≥40 kg：160 → 80 mg，之後 80 mg q2w', total: '54 週 28 劑', cont: '24 週 2 次', avail: age >= 5 && age < 6, why: age >= 5 && age < 6 ? '' : '條文限 5 歲以上未滿 6 歲' }
+      ];
+    }
+
+    notes.push('限消化系專科醫師處方，須事前審查核准；誘導失敗可申請轉換他類生物製劑，同一療程不得合併使用');
+    notes.push('總療程結束後須間隔 >3 個月，復發時依初次標準（傳統治療連續 >3 個月）再次申請');
+    if (!ped) notes.push(NHI_NOT_COVERED[dz]);
+    return { rule, form, version: NHI_VERSION, ped, paths, blockers, eligible, pathOk, drugs, notes, exclHit };
+  }
+
+  // 續用評估
+  // CD: baseCdai, curCdai, fistulaHealed, fistulaFewer → effective / partial / fail
+  // UC 第一次: basePMayo, baseBleed, curPMayo, curBleed；第二次以後: mayo, endo
+  function nhiCont(c) {
+    if (c.disease === 'CD') {
+      const b = num(c.baseCdai), cur = num(c.curCdai);
+      if (cur === null && !c.fistulaHealed && !c.fistulaFewer) return { status: 'pending', text: '請填目前 CDAI 或廔管變化' };
+      if ((cur !== null && cur <= 150) || c.fistulaHealed) return { status: 'effective', text: '有效緩解（CDAI ≤150 或廔管痊癒）→ 可申請續用' };
+      if ((b !== null && cur !== null && b - cur >= 100) || c.fistulaFewer) return { status: 'partial', text: '部分有效緩解（CDAI 下降 ≥100 或廔管數量減少）→ 可申請續用' };
+      return { status: 'fail', text: '未達有效或部分有效緩解 → 不符續用；可申請轉換他類生物製劑' };
+    }
+    if (c.stage === 'second') {
+      const m = num(c.mayo), e = num(c.endo);
+      if (m === null || e === null) return { status: 'pending', text: '請填 Mayo score 與內視鏡 subscore' };
+      return m <= 6 && e <= 1
+        ? { status: 'effective', text: `Mayo ${m} ≤6 且內視鏡 ${e} ≤1 → 可申請繼續使用` }
+        : { status: 'fail', text: `需 Mayo ≤6 且內視鏡 ≤1（目前 ${m} / ${e}）→ 不符續用` };
+    }
+    const bp = num(c.basePMayo), bb = num(c.baseBleed), cp = num(c.curPMayo), cb = num(c.curBleed);
+    if ([bp, bb, cp, cb].includes(null)) return { status: 'pending', text: '請填初次申請與目前的 partial Mayo 及直腸出血分數' };
+    const ok = bp - cp >= 2 && bb - cb >= 1;
+    return ok
+      ? { status: 'effective', text: `Partial Mayo 減少 ${bp - cp}（≥2）且直腸出血減少 ${bb - cb}（≥1）→ 可申請第一次續用` }
+      : { status: 'fail', text: `需 partial Mayo 減少 ≥2 且直腸出血減少 ≥1（目前 ${bp - cp} / ${bb - cb}）→ 不符續用` };
+  }
+
+  return { num, mayo, truelove, ucPlan, cdai, hbi, stdWeight, cdPlan, summary, CDAI_COMPS, nhi, nhiCont, NHI_EXCL, NHI_DRUGS, NHI_VERSION };
 })();
 if (typeof module !== 'undefined') module.exports = IBD;
 /*ENGINE-END*/
@@ -732,17 +1105,83 @@ if (typeof module !== 'undefined') module.exports = IBD;
           { id: 'smoking', label: '目前吸菸' }
         ];
 
+        const view = ref('calc');
+        const blankNHI = () => ({ age: '', months: '', cdai: '', pcdai: '', mayo: '', endo: '', pucai: '', card: false, imaging: false, tx5asa: false, txSteroid: false, txImm: false, sideEffect: false, reapply: false, bioFail: false, thrombRisk: false, notSurgical: false, fistula: false, fistulaSurgery: false, surgery2: false, fistulaPed: false, growth: false, nutritionFail: false, endoOk: false, bxExcl: false, cdiffExcl: false, ivSteroid5d: false, excl: [] });
+        const blankCont = () => ({ stage: 'first', baseCdai: '', curCdai: '', fistulaHealed: false, fistulaFewer: false, basePMayo: '', baseBleed: '', curPMayo: '', curBleed: '', mayo: '', endo: '' });
+        const nhiIn = reactive(blankNHI());
+        const contIn = reactive(blankCont());
+        const nhiVersion = IBD.NHI_VERSION;
+        const nhiExclList = IBD.NHI_EXCL;
+        const nhiPed = computed(() => { const a = IBD.num(nhiIn.age); return a !== null && a < 18; });
+        const calcCdai = computed(() => cd.index === 'CDAI' && IBD.num(cd.stools) !== null ? IBD.cdai(cd).score : null);
+        const calcMayoObj = computed(() => IBD.mayo(uc));
+        const calcMayo = computed(() => calcMayoObj.value.partial ? null : calcMayoObj.value.score);
+        const calcEndo = computed(() => IBD.num(uc.endo));
+        const nhiBaseFields = computed(() => {
+          const f = [
+            { k: 'card', label: diseaseType.value === 'UC' ? '領有潰瘍性結腸炎重大傷病卡' : '領有克隆氏症重大傷病證明' },
+            { k: 'tx5asa', label: '已充分使用 5-ASA (sulfasalazine / mesalamine / balsalazide)' },
+            { k: 'txSteroid', label: '已充分使用類固醇' },
+            { k: 'txImm', label: diseaseType.value === 'UC' ? '已充分使用免疫調節劑 (azathioprine / 6-MP)' : '已充分使用免疫抑制劑 (AZA / 6-MP / MTX)' },
+            { k: 'sideEffect', label: '對上述藥物產生嚴重副作用' },
+            { k: 'reapply', label: '總療程結束 >3 個月後復發，再次申請' },
+            { k: 'bioFail', label: '其他生物製劑治療失敗或無法耐受' },
+            { k: 'thrombRisk', label: '具血栓風險（JAK 抑制劑需排除）' }
+          ];
+          if (diseaseType.value === 'CD') f.splice(1, 0, { k: 'imaging', label: '已備影像診斷評估報告' });
+          return f;
+        });
+        const nhiDzFields = computed(() => {
+          if (diseaseType.value === 'UC') return [
+            { k: 'endoOk', label: '內視鏡下符合潰瘍性結腸炎' },
+            { k: 'bxExcl', label: '病理切片已排除 CMV、阿米巴、淋巴癌' },
+            { k: 'cdiffExcl', label: '糞便檢測已排除 C. difficile' },
+            { k: 'ivSteroid5d', label: '全劑量靜脈類固醇連續 5 天無效' },
+            ...(nhiPed.value ? [{ k: 'growth', label: '生長遲緩 (HV Z score −1 至 −2.5)' }, { k: 'nutritionFail', label: '營養治療與免疫抑制劑治療失敗' }] : [])
+          ];
+          if (nhiPed.value) return [
+            { k: 'fistulaPed', label: '腹部或肛門廔管' },
+            { k: 'growth', label: '生長遲緩 (HV Z score −1 至 −2.5)' },
+            { k: 'nutritionFail', label: '營養治療與免疫抑制劑治療失敗' }
+          ];
+          return [
+            { k: 'notSurgical', label: '病況不適合手術' },
+            { k: 'fistula', label: '肛門周圍或腹壁廔管仍無法癒合' },
+            { k: 'fistulaSurgery', label: '廔管已接受外科手術治療' },
+            { k: 'surgery2', label: '一年內因併發症接受 ≥2 次手術' }
+          ];
+        });
+        const contFirstFields = [
+          { k: 'basePMayo', label: '初次申請 partial Mayo' },
+          { k: 'baseBleed', label: '初次申請 直腸出血分數' },
+          { k: 'curPMayo', label: '目前 partial Mayo' },
+          { k: 'curBleed', label: '目前 直腸出血分數' }
+        ];
+        const nhiRes = computed(() => IBD.nhi({
+          ...nhiIn, disease: diseaseType.value, extent: uc.extent,
+          cdai: nhiIn.cdai !== '' ? nhiIn.cdai : calcCdai.value,
+          mayo: nhiIn.mayo !== '' ? nhiIn.mayo : calcMayo.value,
+          endo: nhiIn.endo !== '' ? nhiIn.endo : calcEndo.value
+        }));
+        const cont = computed(() => IBD.nhiCont({ ...contIn, disease: diseaseType.value }));
+
         const stdWeightHint = computed(() => IBD.stdWeight(cd.height));
         const result = computed(() => diseaseType.value === 'UC' ? IBD.ucPlan(uc, tw) : IBD.cdPlan(cd, hbi));
 
         function resetForm() {
           isExample.value = false;
+          if (view.value === 'nhi') { Object.assign(nhiIn, blankNHI()); Object.assign(contIn, blankCont()); return; }
           if (diseaseType.value === 'UC') { Object.assign(uc, blankUC()); Object.assign(tw, blankTW()); }
           else { const idx = cd.index; Object.assign(cd, blankCD(), { index: idx }); Object.assign(hbi, blankHBI()); }
         }
         function loadExample() {
           resetForm();
           isExample.value = true;
+          if (view.value === 'nhi') {
+            if (diseaseType.value === 'UC') Object.assign(nhiIn, { age: 34, months: 8, mayo: 10, endo: 3, card: true, tx5asa: true, txSteroid: true, txImm: true });
+            else Object.assign(nhiIn, { age: 27, months: 9, cdai: 320, card: true, imaging: true, tx5asa: true, txSteroid: true, txImm: true, notSurgical: true });
+            return;
+          }
           if (diseaseType.value === 'UC') {
             Object.assign(uc, { stool: 2, bleeding: 2, endo: '2', pga: 2, extent: 'E3', flags: ['steroidDep'] });
             Object.assign(tw, { bloodyStools: 4, hr: 88, temp: 37.2, hb: 11.8, esr: '', crp: 12 });
@@ -761,7 +1200,7 @@ if (typeof module !== 'undefined') module.exports = IBD;
           copied.value = true; setTimeout(() => copied.value = false, 1500);
         }
 
-        return { diseaseType, uc, tw, cd, hbi, twFields, ucFlagList, cdaiCompList, hbiCompList, cdRiskList, stdWeightHint, result, resetForm, loadExample, copySummary, isExample, copied };
+        return { view, nhiIn, contIn, nhiVersion, nhiExclList, nhiPed, calcCdai, calcMayo, calcEndo, nhiBaseFields, nhiDzFields, contFirstFields, nhiRes, cont, diseaseType, uc, tw, cd, hbi, twFields, ucFlagList, cdaiCompList, hbiCompList, cdRiskList, stdWeightHint, result, resetForm, loadExample, copySummary, isExample, copied };
       }
     }).mount('#app');
   </script>

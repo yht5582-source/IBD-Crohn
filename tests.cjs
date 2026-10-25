@@ -139,5 +139,101 @@ ok(r.abscessSuspect, 'HBI abscess');
 // summary
 ok(IBD.summary('CD', r).includes('Harvey-Bradshaw'), 'summary');
 
+
+// ---------- NHI 第八節 ----------
+const cdA = { disease: 'CD', age: 30, card: true, imaging: true, tx5asa: true, txSteroid: true, txImm: true, months: 7, cdai: 320, notSurgical: true, excl: [] };
+let q = IBD.nhi(cdA);
+eq([q.eligible, q.rule.startsWith('8.2.4.7.1')], [true, true], 'CD adult path 1');
+q = IBD.nhi({ ...cdA, months: 6 });
+eq(q.eligible, false, 'CD 超過六個月: 6 not enough');
+q = IBD.nhi({ ...cdA, cdai: 299 });
+eq(q.eligible, false, 'CD CDAI 299');
+q = IBD.nhi({ ...cdA, cdai: 120, sideEffect: true });
+eq(q.eligible, true, 'CD severe side effect bypasses CDAI 300');
+q = IBD.nhi({ ...cdA, notSurgical: false });
+eq(q.eligible, false, 'CD path1 requires not surgical');
+q = IBD.nhi({ ...cdA, notSurgical: false, cdai: 120, fistula: true });
+eq(q.eligible, true, 'CD fistula path CDAI ≥100');
+q = IBD.nhi({ ...cdA, notSurgical: false, cdai: 120, fistula: true, txImm: false });
+eq(q.eligible, false, 'CD fistula path needs all three');
+q = IBD.nhi({ ...cdA, notSurgical: false, cdai: 120, fistula: true, txImm: false, fistulaSurgery: true });
+eq(q.eligible, true, 'CD fistula path via surgery');
+q = IBD.nhi({ ...cdA, notSurgical: false, cdai: 99, fistula: true });
+eq(q.eligible, false, 'CD fistula CDAI 99');
+q = IBD.nhi({ ...cdA, notSurgical: false, cdai: 150, surgery2: true, months: 1 });
+eq(q.eligible, true, 'CD 2 surgeries/yr (no month req)');
+q = IBD.nhi({ ...cdA, card: false });
+eq(q.eligible, false, 'CD needs card');
+q = IBD.nhi({ ...cdA, imaging: false });
+eq(q.eligible, false, 'CD needs imaging');
+q = IBD.nhi({ ...cdA, excl: ['tb'] });
+eq(q.eligible, false, 'TB exclusion');
+q = IBD.nhi({ ...cdA, tx5asa: false, txImm: false, months: 7 });
+eq(q.eligible, true, 'CD path1 及/或 → steroid alone ok');
+q = IBD.nhi({ ...cdA, reapply: true, months: 4, tx5asa: false, txImm: false });
+eq(q.eligible, true, 'CD reapply >3 months');
+q = IBD.nhi({ ...cdA, reapply: true, months: 3 });
+eq(q.eligible, false, 'CD reapply 3 months not enough');
+q = IBD.nhi(cdA);
+let upa = q.drugs.find(d => d.id === 'upa');
+eq(upa.avail, false, 'CD upa needs bio failure');
+eq(q.drugs.filter(d => d.avail).map(d => d.id), ['ada', 'ifx', 'vdz', 'ust', 'rzb'], 'CD naive drugs');
+q = IBD.nhi({ ...cdA, bioFail: true });
+eq(q.drugs.find(d => d.id === 'upa').avail, true, 'CD upa after bio fail');
+q = IBD.nhi({ ...cdA, bioFail: true, thrombRisk: true });
+eq(q.drugs.find(d => d.id === 'upa').avail, false, 'CD upa thrombosis risk');
+ok(!q.drugs.some(d => /mirikizumab|guselkumab/i.test(d.name)), 'CD no miri/gus');
+// pediatric CD
+const cdP = { disease: 'CD', age: 12, card: true, imaging: true, txSteroid: true, txImm: true, months: 4, pcdai: 35, excl: [] };
+q = IBD.nhi(cdP);
+eq([q.ped, q.eligible, q.rule.startsWith('8.2.4.7.2')], [true, true, true], 'ped CD path1');
+eq(IBD.nhi({ ...cdP, pcdai: 30 }).eligible, false, 'PCDAI >30 strict');
+eq(IBD.nhi({ ...cdP, months: 3 }).eligible, false, 'ped >3 months strict');
+eq(IBD.nhi({ ...cdP, pcdai: 10, fistulaPed: true, growth: true }).eligible, true, 'ped fistula + growth');
+eq(IBD.nhi({ ...cdP, age: 5 }).eligible, false, 'ped CD <6');
+eq(IBD.nhi(cdP).drugs.find(d => d.id === 'rzb').avail, false, 'ped RZB <16');
+eq(IBD.nhi({ ...cdP, age: 16 }).drugs.find(d => d.id === 'rzb').avail, true, 'ped RZB 16');
+eq(IBD.nhi({ ...cdP, excl: ['preg'] }).eligible, true, 'ped CD pregnancy not listed');
+// UC adult
+const ucA = { disease: 'UC', age: 40, card: true, extent: 'E3', tx5asa: true, txSteroid: true, txImm: true, months: 6, mayo: 9, endo: 2, excl: [] };
+q = IBD.nhi(ucA);
+eq([q.eligible, q.rule.startsWith('8.2.4.9.1')], [true, true], 'UC adult path1 (≥6 months)');
+eq(IBD.nhi({ ...ucA, mayo: 8 }).eligible, false, 'UC Mayo 8');
+eq(IBD.nhi({ ...ucA, endo: 1 }).eligible, false, 'UC endo 1');
+eq(IBD.nhi({ ...ucA, extent: 'E1' }).eligible, false, 'UC proctitis excluded');
+eq(IBD.nhi({ ...ucA, txImm: false }).eligible, false, 'UC needs immunomodulator');
+eq(IBD.nhi({ ...ucA, txImm: false, sideEffect: true }).eligible, true, 'UC side effect');
+eq(IBD.nhi({ ...ucA, months: 5 }).eligible, false, 'UC 5 months');
+eq(IBD.nhi({ ...ucA, card: false }).eligible, false, 'UC path1 needs card');
+const asuc = { disease: 'UC', age: 40, extent: 'E3', mayo: 12, endoOk: true, bxExcl: true, cdiffExcl: true, ivSteroid5d: true, excl: [] };
+eq(IBD.nhi(asuc).eligible, true, 'UC ASUC path (no card needed)');
+eq(IBD.nhi({ ...asuc, mayo: 11 }).eligible, false, 'ASUC needs Mayo 12');
+eq(IBD.nhi({ ...asuc, cdiffExcl: false }).eligible, false, 'ASUC needs C diff excluded');
+q = IBD.nhi(ucA);
+eq(q.drugs.filter(d => d.avail).map(d => d.id), ['gol', 'ada', 'vdz', 'ifx', 'ust'], 'UC naive drugs');
+eq(IBD.nhi({ ...ucA, bioFail: true }).drugs.filter(d => d.avail).length, 7, 'UC all 7 after bio fail');
+ok(!q.drugs.some(d => /risankizumab|ozanimod/i.test(d.name)), 'UC no RZB/ozanimod');
+// UC pediatric
+const ucP = { disease: 'UC', age: 10, card: true, extent: 'E3', tx5asa: true, txSteroid: true, txImm: true, months: 3, pucai: 40, excl: [] };
+q = IBD.nhi(ucP);
+eq([q.eligible, q.rule.startsWith('8.2.4.9.2')], [true, true], 'ped UC path1');
+eq(q.drugs.map(d => d.avail), [true, false], 'ped UC: IFX yes, ADA only 5–<6');
+eq(IBD.nhi({ ...ucP, age: 5.5 }).drugs.map(d => d.avail), [false, true], 'ped UC age 5.5');
+eq(IBD.nhi({ ...ucP, pucai: 30 }).eligible, false, 'PUCAI 30');
+// missing age
+eq(IBD.nhi({ ...ucA, age: '' }).eligible, false, 'age required');
+
+// continuation
+eq(IBD.nhiCont({ disease: 'CD', baseCdai: 320, curCdai: 140 }).status, 'effective', 'CD cont effective');
+eq(IBD.nhiCont({ disease: 'CD', baseCdai: 320, curCdai: 220 }).status, 'partial', 'CD cont partial (drop 100)');
+eq(IBD.nhiCont({ disease: 'CD', baseCdai: 320, curCdai: 230 }).status, 'fail', 'CD cont fail');
+eq(IBD.nhiCont({ disease: 'CD', fistulaFewer: true }).status, 'partial', 'CD fistula fewer');
+eq(IBD.nhiCont({ disease: 'CD', curCdai: 400, fistulaHealed: true }).status, 'effective', 'CD fistula healed');
+eq(IBD.nhiCont({ disease: 'UC', stage: 'first', basePMayo: 8, baseBleed: 3, curPMayo: 6, curBleed: 2 }).status, 'effective', 'UC first cont');
+eq(IBD.nhiCont({ disease: 'UC', stage: 'first', basePMayo: 8, baseBleed: 3, curPMayo: 5, curBleed: 3 }).status, 'fail', 'UC first cont bleeding not reduced');
+eq(IBD.nhiCont({ disease: 'UC', stage: 'second', mayo: 6, endo: 1 }).status, 'effective', 'UC second cont');
+eq(IBD.nhiCont({ disease: 'UC', stage: 'second', mayo: 6, endo: 2 }).status, 'fail', 'UC second endo 2');
+eq(IBD.nhiCont({ disease: 'UC', stage: 'first', basePMayo: 8 }).status, 'pending', 'UC pending');
+
 console.log(`${n - fail}/${n} passed`);
 process.exit(fail ? 1 : 0);
