@@ -235,5 +235,24 @@ eq(IBD.nhiCont({ disease: 'UC', stage: 'second', mayo: 6, endo: 1 }).status, 'ef
 eq(IBD.nhiCont({ disease: 'UC', stage: 'second', mayo: 6, endo: 2 }).status, 'fail', 'UC second endo 2');
 eq(IBD.nhiCont({ disease: 'UC', stage: 'first', basePMayo: 8 }).status, 'pending', 'UC pending');
 
+// ---------- 台灣規範 block (separate from international) ----------
+let tw1 = IBD.ucPlan({ stool: 3, bleeding: 2, endo: '3', pga: 2, extent: 'E3' }, {});
+ok(tw1.taiwan.some(t => t.includes('Mayo ≥9') && t.includes('目前 Mayo 10')), 'UC moderate TW threshold shows score');
+ok(tw1.taiwan.some(t => t.includes('未給付') && t.includes('mirikizumab')), 'UC TW not covered list');
+ok(!tw1.meds.some(m => m.includes('健保')), 'international meds contain no NHI text');
+tw1 = IBD.ucPlan({ stool: 2, bleeding: 2, endo: '2', pga: 2, extent: 'E1' }, {});
+ok(tw1.taiwan.some(t => t.includes('直腸型')), 'UC E1 TW excluded');
+tw1 = IBD.ucPlan({ stool: 3, bleeding: 3, endo: '3', pga: 3 }, { bloodyStools: 8, hr: 110 });
+ok(tw1.taiwan.some(t => t.includes('5 天')) && tw1.taiwan.some(t => t.includes('第 3 天')), 'ASUC TW 5-day vs intl day 3');
+tw1 = IBD.ucPlan({ stool: 0, bleeding: 0, endo: '0', pga: 0, flags: ['advanced'] }, {});
+ok(tw1.taiwan[0].includes('續用'), 'UC remission TW continuation');
+let tw2 = IBD.cdPlan({ ...cdBase, stools: 6, pain: 2, wellbeing: 2 }, {});
+ok(tw2.taiwan.some(t => t.includes('未達路徑 (1) 門檻 300')), 'CD 252 below NHI 300');
+tw2 = IBD.cdPlan({ ...cdBase, stools: 12, pain: 3, wellbeing: 4 }, {});
+ok(tw2.taiwan.some(t => t.includes('已達路徑 (1)')), 'CD ≥300 TW');
+tw2 = IBD.cdPlan({ ...cdBase, index: 'HBI' }, { wellbeing: 2, pain: 2, stools: 5, mass: 0, comps: [] });
+ok(tw2.taiwan.some(t => t.includes('HBI 不能用於申請')), 'HBI not for NHI');
+ok(IBD.summary('CD', tw2).includes('【台灣規範】') && IBD.summary('CD', tw2).includes('【國際指引】'), 'summary separates sources');
+
 console.log(`${n - fail}/${n} passed`);
 process.exit(fail ? 1 : 0);
